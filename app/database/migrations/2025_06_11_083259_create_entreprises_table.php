@@ -9,27 +9,24 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-public function up()
-{
-    Schema::create('personnes', function (Blueprint $table) {
+    public function up(): void
+    {
+    Schema::create('entreprises', function (Blueprint $table) {
         $table->id();
-        $table->tinyInteger('civilite'); // 1: M./Mme
         $table->string('nom');
-        $table->string('prenom');
-        $table->string('email')->unique();
-        $table->string('telephone')->nullable();
-        $table->unsignedBigInteger('entreprise_id')->nullable(); 
+        $table->foreignId('secteur_id')->constrained('secteurs_activite')->onDelete('cascade');
+        $table->string('code_postal');
+        $table->string('ville');
+        $table->decimal('chiffre_affaires', 15, 2);
         $table->timestamps();
-
     });
-}
-
+    }
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('personnes');
+        Schema::dropIfExists('entreprises');
     }
 };

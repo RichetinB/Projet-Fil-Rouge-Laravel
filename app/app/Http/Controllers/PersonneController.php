@@ -12,7 +12,10 @@ class PersonneController extends Controller
      */
     public function index()
     {
-        //
+        $personnes = Personne::with('civilite')
+            ->select('id', 'civilite_id', 'nom', 'prenom')
+            ->get();
+        return response()->json($personnes);
     }
 
     /**
@@ -29,11 +32,13 @@ class PersonneController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'civilite' => 'required|integer',
+            'civilite_id' => 'required|exists:civilites,id',
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'email' => 'required|email|unique:personnes,email',
-            'telephone' => 'nullable|string|max:15',
+            'telephone' => 'nullable|string|max:10',
+            'localisation_id' => 'nullable|exists:localisations,id',
+            'entreprise_id' => 'nullable|exists:entreprises,id',
         ]);
 
         $personne = Personne::create($request->all());
@@ -44,10 +49,17 @@ class PersonneController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Personne $personne)
+    public function show($id)
     {
-        //
+        $personne = Personne::with('civilite', 'localisation', 'entreprise')->find($id);
+
+        if (!$personne) {
+            return response()->json(['message' => 'Personne non trouvée'], 404);
+        }
+
+        return response()->json($personne);
     }
+
 
     /**
      * Show the form for editing the specified resource.
@@ -60,16 +72,38 @@ class PersonneController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Personne $personne)
+    public function update(Request $request, $id)
     {
-        //
+        $personne = Personne::find($id);
+        if (!$personne) {
+            return response()->json(['message' => 'Personne non trouvée'], 404);
+        }
+        $validated = $request->validate([
+            'civilite_id' => 'nullable|exists:civilites,id',
+            'nom' => 'sometimes|string|max:255',
+            'prenom' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:personnes,email,' . $personne->id,
+            'telephone' => 'sometimes|string|max:20',
+            'entreprise_id' => 'nullable|exists:entreprises,id',
+            'localisation_id' => 'nullable|exists:localisations,id',
+        ]);
+        $personne->update($validated);
+        
+        return response()->json($personne->load('civilite', 'entreprise', 'localisation'));
+
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Personne $personne)
+    public function destroy($id)
     {
-        //
+        $personne = Personne::find($id);
+        if (!$personne) {
+            return response()->json(['message' => 'Personne non trouvée'], 404);
+        }
+        $personne->delete();
+        return response()->json(['message' => 'Personne supprimée avec succès']);
     }
+
 }
